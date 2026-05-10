@@ -1,0 +1,50 @@
+name: fulusku
+description: "Aplikasi keuangan pribadi dengan OCR untuk pasar Indonesia."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^9.1.0
+  equatable: ^2.0.7
+
+  # Backend
+  supabase_flutter: ^2.9.0
+
+  # Navigation
+  go_router: ^15.1.0
+
+  # UI
+  fl_chart: ^0.70.2
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.0.17
+
+  # Camera & Image
+  camera: ^0.11.0+2
+  image_picker: ^1.1.2
+  image_cropper: ^8.0.2
+
+  # Utils
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  path_provider: ^2.1.5
+
+  # Local Storage (cache ringan, bukan offline-first)
+  shared_preferences: ^2.3.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
