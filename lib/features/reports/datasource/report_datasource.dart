@@ -103,7 +103,7 @@ accounts!transactions_account_id_fkey ( id, user_id, name, type, initial_balance
     // Daily trend dari transaksi
     final dailyResp = await _client
         .from(SupabaseTables.transactions)
-        .select('amount, type, transaction_date, accounts!inner(user_id)')
+        .select('amount, type, transaction_date, accounts!transactions_account_id_fkey!inner(user_id)')
         .eq('accounts.user_id', userId)
         .gte('transaction_date', _fmt(start))
         .lt('transaction_date', _fmt(end));
