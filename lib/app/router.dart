@@ -15,7 +15,9 @@ import '../features/scanner/view/camera_screen.dart';
 import '../features/scanner/view/review_screen.dart';
 import '../features/settings/view/settings_screen.dart';
 import '../features/transactions/view/transaction_list_screen.dart';
+import '../features/transactions/view/transaction_detail_screen.dart';
 import '../shared/widgets/loading_overlay.dart';
+import '../core/models/transaction_model.dart';
 
 final _shellNavKey = GlobalKey<NavigatorState>();
 final _rootNavKey = GlobalKey<NavigatorState>();
@@ -87,6 +89,15 @@ final appRouter = GoRouter(
       path: '/transactions',
       parentNavigatorKey: _rootNavKey,
       builder: (context, state) => const TransactionListScreen(),
+    ),
+    GoRoute(
+      path: '/transactions/:id',
+      parentNavigatorKey: _rootNavKey,
+      builder: (context, state) {
+        final tx = state.extra as TransactionModel?;
+        if (tx == null) return const TransactionListScreen();
+        return TransactionDetailScreen(transaction: tx);
+      },
     ),
     GoRoute(
       path: '/scanner',

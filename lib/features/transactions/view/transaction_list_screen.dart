@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -149,6 +150,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           final tx = grouped[date]![i];
                           return TransactionTile(
                             transaction: tx,
+                            onTap: () => context.push(
+                              '/transactions/${tx.id}',
+                              extra: tx,
+                            ),
                             onDelete: () {
                               context
                                   .read<TransactionBloc>()
