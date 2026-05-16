@@ -27,19 +27,6 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   late final _picker = widget.imagePicker ?? ImagePicker();
-  bool _autoTriggered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Auto-trigger camera saat screen open.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_autoTriggered) {
-        _autoTriggered = true;
-        _capture();
-      }
-    });
-  }
 
   Future<void> _capture() async {
     try {
