@@ -87,17 +87,19 @@ Scrollable body:
 
 ### Delete Flow
 
+`TransactionDetailScreen` adalah `StatelessWidget` — delete menggunakan **optimistic pop**:
+
 1. User tap icon trash
 2. `AlertDialog` konfirmasi: "Hapus transaksi ini? Tindakan tidak dapat dibatalkan."
-3. Konfirmasi → `context.read<TransactionBloc>().add(DeleteTransaction(tx.id))`
-4. `BlocListener` menunggu `TransactionLoaded` state (list refresh setelah delete)
-5. `context.pop()` kembali ke list
+3. Konfirmasi → `context.pop()` (tutup dialog) → `context.pop()` (kembali ke list) → `context.read<TransactionBloc>().add(DeleteTransaction(tx.id))`
+4. `TransactionBloc` update cache dan emit `TransactionLoaded` — list langsung refresh
+5. Jika delete gagal: `TransactionError` ditangani oleh `BlocListener` di `TransactionListScreen` (sudah ada pattern error snackbar di sana)
 
 ### Error Handling
 
 | Scenario | Handling |
 |----------|----------|
-| Delete gagal | `showErrorSnackbar(context, message)` — tidak pop |
+| Delete gagal | Error di-handle oleh `TransactionListScreen`'s `BlocListener` (user sudah kembali ke list) |
 | `receiptImageUrl` ada tapi image load error | `errorWidget`: `Icon(Icons.broken_image_outlined)` |
 | `extra` null (direct deep link ke `/transactions/:id`) | Redirect ke `/transactions` |
 
