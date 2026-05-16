@@ -7,7 +7,6 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../transactions/view/add_transaction_sheet.dart';
 import '../cubit/scanner_cubit.dart';
 import '../cubit/scanner_state.dart';
 
@@ -214,21 +213,8 @@ class ReviewScreen extends StatelessWidget {
                     flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        context.read<ScannerCubit>().reset();
-                        // Pop ke halaman sebelumnya, lalu buka add transaction sheet
-                        // dengan data OCR sebagai initial values.
+                        context.read<ScannerCubit>().confirm(result);
                         context.pop();
-                        Future.delayed(const Duration(milliseconds: 200), () {
-                          if (context.mounted) {
-                            showAddTransactionSheet(
-                              context,
-                              initialAmount: result.totalAmount,
-                              initialPayee: result.merchantName,
-                              initialDate: result.transactionDate,
-                              receiptImageUrl: result.rawImageUrl,
-                            );
-                          }
-                        });
                       },
                       icon: const Icon(Icons.check_rounded),
                       label: const Text('Lanjut Catat'),

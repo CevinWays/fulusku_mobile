@@ -30,6 +30,13 @@ class ScannerReview extends ScannerState {
   List<Object?> get props => [result, imageUrl];
 }
 
+class ScannerConfirmed extends ScannerState {
+  final ReceiptResultModel result;
+  const ScannerConfirmed(this.result);
+  @override
+  List<Object?> get props => [result];
+}
+
 class ScannerError extends ScannerState {
   final String message;
   const ScannerError(this.message);

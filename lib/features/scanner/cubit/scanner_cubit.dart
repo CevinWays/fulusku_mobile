@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/models/receipt_result_model.dart';
 import '../datasource/scanner_datasource.dart';
 import 'scanner_state.dart';
 
@@ -31,6 +32,8 @@ class ScannerCubit extends Cubit<ScannerState> {
       emit(ScannerError('Gagal memproses struk: $e'));
     }
   }
+
+  void confirm(ReceiptResultModel result) => emit(ScannerConfirmed(result));
 
   void reset() => emit(const ScannerIdle());
 }

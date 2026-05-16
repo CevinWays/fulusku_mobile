@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../core/models/receipt_result_model.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../scanner/cubit/scanner_cubit.dart';
+import '../../scanner/cubit/scanner_state.dart';
 import '../../transactions/view/add_transaction_sheet.dart';
 
 /// Main shell dengan 4 tab + FAB di tengah untuk Add Transaction.
@@ -110,52 +114,67 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: const CircleBorder(),
-        onPressed: () => _showAddOptions(context),
-        child: const Icon(Icons.add_rounded, size: 32),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: AppColors.surface,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        elevation: 12,
-        height: 64,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.home_rounded,
-              label: 'Beranda',
-              selected: _currentIndex == 0,
-              onTap: () => _onTap(context, 0),
-            ),
-            _NavItem(
-              icon: Icons.bar_chart_rounded,
-              label: 'Laporan',
-              selected: _currentIndex == 1,
-              onTap: () => _onTap(context, 1),
-            ),
-            const SizedBox(width: 56),
-            _NavItem(
-              icon: Icons.savings_rounded,
-              label: 'Anggaran',
-              selected: _currentIndex == 3,
-              onTap: () => _onTap(context, 3),
-            ),
-            _NavItem(
-              icon: Icons.settings_rounded,
-              label: 'Setelan',
-              selected: _currentIndex == 4,
-              onTap: () => _onTap(context, 4),
-            ),
-          ],
+    return BlocListener<ScannerCubit, ScannerState>(
+      listener: (context, state) {
+        if (state is ScannerConfirmed) {
+          final ReceiptResultModel result = state.result;
+          context.read<ScannerCubit>().reset();
+          showAddTransactionSheet(
+            context,
+            initialAmount: result.totalAmount,
+            initialPayee: result.merchantName,
+            initialDate: result.transactionDate,
+            receiptImageUrl: result.rawImageUrl,
+          );
+        }
+      },
+      child: Scaffold(
+        body: child,
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: const CircleBorder(),
+          onPressed: () => _showAddOptions(context),
+          child: const Icon(Icons.add_rounded, size: 32),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomAppBar(
+          color: AppColors.surface,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8,
+          elevation: 12,
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                icon: Icons.home_rounded,
+                label: 'Beranda',
+                selected: _currentIndex == 0,
+                onTap: () => _onTap(context, 0),
+              ),
+              _NavItem(
+                icon: Icons.bar_chart_rounded,
+                label: 'Laporan',
+                selected: _currentIndex == 1,
+                onTap: () => _onTap(context, 1),
+              ),
+              const SizedBox(width: 56),
+              _NavItem(
+                icon: Icons.savings_rounded,
+                label: 'Anggaran',
+                selected: _currentIndex == 3,
+                onTap: () => _onTap(context, 3),
+              ),
+              _NavItem(
+                icon: Icons.settings_rounded,
+                label: 'Setelan',
+                selected: _currentIndex == 4,
+                onTap: () => _onTap(context, 4),
+              ),
+            ],
+          ),
         ),
       ),
     );
