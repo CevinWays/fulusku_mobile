@@ -1,10 +1,14 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../shared/widgets/error_snackbar.dart';
@@ -14,14 +18,15 @@ import '../cubit/scanner_state.dart';
 /// Camera screen — pakai ImagePicker (system camera) untuk simplicity MVP.
 /// Camera in-app dengan overlay panduan bisa di-upgrade post-MVP.
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key});
+  const CameraScreen({super.key, this.imagePicker});
+  final ImagePicker? imagePicker;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  final _picker = ImagePicker();
+  late final _picker = widget.imagePicker ?? ImagePicker();
   bool _autoTriggered = false;
 
   @override
@@ -58,6 +63,36 @@ class _CameraScreenState extends State<CameraScreen> {
         Navigator.pop(context);
       }
     }
+  }
+
+  Future<void> _pickPdf() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final pdfPath = result.files.single.path;
+    if (pdfPath == null) return;
+
+    final document = await PdfDocument.openFile(pdfPath);
+    final page = await document.getPage(1);
+    final pageImage = await page.render(
+      width: page.width * 2,
+      height: page.height * 2,
+      format: PdfPageImageFormat.jpeg,
+    );
+    await page.close();
+    await document.close();
+
+    if (pageImage == null) return;
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/${const Uuid().v4()}.jpg');
+    await file.writeAsBytes(pageImage.bytes);
+
+    if (!mounted) return;
+    context.read<ScannerCubit>().uploadAndProcess(file);
   }
 
   Future<void> _pickFromGallery() async {
@@ -160,6 +195,16 @@ class _CameraScreenState extends State<CameraScreen> {
                                 color: Colors.white70),
                             label: const Text(
                               'Pilih dari Galeri',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          TextButton.icon(
+                            onPressed: _pickPdf,
+                            icon: const Icon(Icons.picture_as_pdf,
+                                color: Colors.white70),
+                            label: const Text(
+                              'Upload PDF',
                               style: TextStyle(color: Colors.white70),
                             ),
                           ),
