@@ -51,6 +51,7 @@ void main() {
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
       expect(find.text('Buka Kamera'), findsNothing);
+      expect(find.text('Pilih dari Galeri'), findsNothing);
     });
 
     testWidgets('hides action buttons while processing', (tester) async {
@@ -59,6 +60,8 @@ void main() {
           .thenAnswer((_) => Stream.value(const ScannerProcessing()));
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
+      expect(find.text('Buka Kamera'), findsNothing);
+      expect(find.text('Pilih dari Galeri'), findsNothing);
     });
   });
 }
