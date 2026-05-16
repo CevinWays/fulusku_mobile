@@ -17,6 +17,7 @@ class MockTransactionBloc
     implements TransactionBloc {}
 
 TransactionModel _buildTx({
+  TransType type = TransType.expense,
   String? payee,
   String? notes,
   String? receiptImageUrl,
@@ -25,8 +26,8 @@ TransactionModel _buildTx({
       id: 1,
       accountId: 1,
       categoryId: 1,
-      amount: 271000,
-      type: TransType.expense,
+      amount: 271000.0,
+      type: type,
       transactionDate: DateTime(2026, 5, 16),
       createdAt: DateTime(2026, 5, 16, 17, 4),
       updatedAt: DateTime(2026, 5, 16, 17, 4),
@@ -49,7 +50,6 @@ void main() {
   setUp(() {
     bloc = MockTransactionBloc();
     when(() => bloc.state).thenReturn(const TransactionInitial());
-    when(() => bloc.stream).thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(() => reset(bloc));
@@ -64,11 +64,19 @@ void main() {
   group('TransactionDetailScreen', () {
     // TODO: implement TransactionDetailScreen in Task 2 to make these pass
 
-    testWidgets('renders amount, category, and date', (tester) async {
-      await tester.pumpWidget(buildSubject(_buildTx(payee: 'KFC Sudirman')));
+    testWidgets('renders formatted amount', (tester) async {
+      await tester.pumpWidget(buildSubject(_buildTx()));
       expect(find.textContaining('271.000'), findsOneWidget);
-      expect(find.textContaining('Makanan'), findsWidgets);
-      expect(find.textContaining('16 Mei 2026'), findsWidgets);
+    });
+
+    testWidgets('renders category name', (tester) async {
+      await tester.pumpWidget(buildSubject(_buildTx()));
+      expect(find.textContaining('Makanan'), findsOneWidget);
+    });
+
+    testWidgets('renders transaction date', (tester) async {
+      await tester.pumpWidget(buildSubject(_buildTx()));
+      expect(find.textContaining('16 Mei 2026'), findsOneWidget);
     });
 
     testWidgets('hides receipt section when receiptImageUrl is null',
