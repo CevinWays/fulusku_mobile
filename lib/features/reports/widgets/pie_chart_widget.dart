@@ -57,28 +57,33 @@ class CategoryPieChart extends StatelessWidget {
     ];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 200,
-          child: PieChart(
-            PieChartData(
-              sections: sections,
-              centerSpaceRadius: 50,
-              sectionsSpace: 2,
+          height: 240,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: PieChart(
+              PieChartData(
+                sections: sections,
+                centerSpaceRadius: 50,
+                sectionsSpace: 2,
+              ),
             ),
           ),
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...top.map((e) => _LegendItem(
-                  color: AppColors.fromHex(e.category.color),
-                  label: e.category.name,
-                  amount: e.amount,
-                  total: total,
+            ...top.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _LegendItem(
+                    color: AppColors.fromHex(e.category.color),
+                    label: e.category.name,
+                    amount: e.amount,
+                    total: total,
+                  ),
                 )),
             if (restTotal > 0)
               _LegendItem(
@@ -111,19 +116,21 @@ class _LegendItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = total > 0 ? amount / total * 100 : 0;
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 10,
           height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
-        Text(
-          '$label · ${pct.toStringAsFixed(0)}%',
-          style: AppTypography.caption,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '$label · ${pct.toStringAsFixed(0)}%',
+            style: AppTypography.caption,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         Text(
           formatCurrencyCompact(amount),
           style: AppTypography.caption.copyWith(
