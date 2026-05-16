@@ -66,33 +66,46 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _pickPdf() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result == null || result.files.isEmpty) return;
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (result == null || result.files.isEmpty) return;
 
-    final pdfPath = result.files.single.path;
-    if (pdfPath == null) return;
+      final pdfPath = result.files.single.path;
+      if (pdfPath == null) return;
 
-    final document = await PdfDocument.openFile(pdfPath);
-    final page = await document.getPage(1);
-    final pageImage = await page.render(
-      width: page.width * 2,
-      height: page.height * 2,
-      format: PdfPageImageFormat.jpeg,
-    );
-    await page.close();
-    await document.close();
+      final document = await PdfDocument.openFile(pdfPath);
+      try {
+        final page = await document.getPage(1);
+        try {
+          const maxRenderWidth = 1600.0;
+          final scale = (maxRenderWidth / page.width).clamp(0.0, 2.0);
+          final pageImage = await page.render(
+            width: page.width * scale,
+            height: page.height * scale,
+            format: PdfPageImageFormat.jpeg,
+          );
+          if (pageImage == null) return;
 
-    if (pageImage == null) return;
+          final dir = await getTemporaryDirectory();
+          final file = File('${dir.path}/${const Uuid().v4()}.jpg');
+          await file.writeAsBytes(pageImage.bytes);
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/${const Uuid().v4()}.jpg');
-    await file.writeAsBytes(pageImage.bytes);
-
-    if (!mounted) return;
-    context.read<ScannerCubit>().uploadAndProcess(file);
+          if (!mounted) return;
+          await context.read<ScannerCubit>().uploadAndProcess(file);
+        } finally {
+          await page.close();
+        }
+      } finally {
+        await document.close();
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorSnackbar(context, 'Gagal membaca PDF: $e');
+      }
+    }
   }
 
   Future<void> _pickFromGallery() async {
