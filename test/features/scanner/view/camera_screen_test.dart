@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,9 +27,27 @@ void main() {
   setUp(() {
     cubit = MockScannerCubit();
     when(() => cubit.state).thenReturn(const ScannerIdle());
+    when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
+
+    // Mock image_picker platform channel so initState auto-trigger doesn't throw
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/image_picker'),
+      (call) async => null, // simulate user cancellation
+    );
+  });
+
+  tearDown(() {
+    reset(cubit);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/image_picker'),
+      null,
+    );
   });
 
   group('CameraScreen', () {
+    // TODO: add tap test in Task 3 when FilePicker is injectable
     testWidgets('shows Upload PDF button in idle state', (tester) async {
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsOneWidget);
@@ -45,23 +64,29 @@ void main() {
     });
 
     testWidgets('hides action buttons while uploading', (tester) async {
-      when(() => cubit.state).thenReturn(const ScannerUploading());
-      when(() => cubit.stream)
-          .thenAnswer((_) => Stream.value(const ScannerUploading()));
+      whenListen(
+        cubit,
+        Stream.fromIterable([const ScannerUploading()]),
+        initialState: const ScannerUploading(),
+      );
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
       expect(find.text('Buka Kamera'), findsNothing);
       expect(find.text('Pilih dari Galeri'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('hides action buttons while processing', (tester) async {
-      when(() => cubit.state).thenReturn(const ScannerProcessing());
-      when(() => cubit.stream)
-          .thenAnswer((_) => Stream.value(const ScannerProcessing()));
+      whenListen(
+        cubit,
+        Stream.fromIterable([const ScannerProcessing()]),
+        initialState: const ScannerProcessing(),
+      );
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
       expect(find.text('Buka Kamera'), findsNothing);
       expect(find.text('Pilih dari Galeri'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
 }
