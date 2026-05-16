@@ -149,13 +149,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     else
                       SliverList(
                         delegate: SliverChildBuilderDelegate(
-                          (_, i) => TransactionTile(
-                            transaction: state.recentTransactions[i],
-                            onTap: () => context.push(
-                              '/transactions/${state.recentTransactions[i].id}',
-                              extra: state.recentTransactions[i],
-                            ),
-                          ),
+                          (_, i) {
+                            final tx = state.recentTransactions[i];
+                            return TransactionTile(
+                              transaction: tx,
+                              onTap: () => context.push(
+                                '/transactions/${tx.id}',
+                                extra: tx,
+                              ),
+                            );
+                          },
                           childCount: state.recentTransactions.length,
                         ),
                       ),

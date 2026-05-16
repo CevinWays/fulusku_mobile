@@ -94,8 +94,15 @@ final appRouter = GoRouter(
       path: '/transactions/:id',
       parentNavigatorKey: _rootNavKey,
       builder: (context, state) {
-        final tx = state.extra as TransactionModel?;
-        if (tx == null) return const TransactionListScreen();
+        final tx = state.extra is TransactionModel
+            ? state.extra as TransactionModel
+            : null;
+        if (tx == null) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => GoRouter.of(context).go('/transactions'),
+          );
+          return const SizedBox.shrink();
+        }
         return TransactionDetailScreen(transaction: tx);
       },
     ),
