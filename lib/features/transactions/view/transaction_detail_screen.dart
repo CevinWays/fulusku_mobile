@@ -17,7 +17,7 @@ class TransactionDetailScreen extends StatelessWidget {
 
   const TransactionDetailScreen({super.key, required this.transaction});
 
-  Color _amountColor(TransType type) {
+  static Color _amountColor(TransType type) {
     switch (type) {
       case TransType.income:
         return AppColors.income;
@@ -28,7 +28,7 @@ class TransactionDetailScreen extends StatelessWidget {
     }
   }
 
-  String _amountPrefix(TransType type) {
+  static String _amountPrefix(TransType type) {
     switch (type) {
       case TransType.income:
         return '+';
@@ -170,7 +170,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   const Divider(height: 1),
                   _DetailRow(
                     label: 'Toko / Penerima',
-                    value: tx.payee?.isNotEmpty == true ? tx.payee! : '—',
+                    value: tx.payee?.trim().isNotEmpty == true ? tx.payee!.trim() : '—',
                   ),
                   const Divider(height: 1),
                   _DetailRow(
@@ -178,12 +178,19 @@ class TransactionDetailScreen extends StatelessWidget {
                     value: tx.account?.name ?? '—',
                   ),
                   const Divider(height: 1),
+                  if (tx.type == TransType.transfer) ...[
+                    const Divider(height: 1),
+                    _DetailRow(
+                      label: 'Ke Akun',
+                      value: tx.destinationAccount?.name ?? '—',
+                    ),
+                  ],
                   _DetailRow(
                     label: 'Catatan',
-                    value: tx.notes?.isNotEmpty == true
-                        ? tx.notes!
+                    value: tx.notes?.trim().isNotEmpty == true
+                        ? tx.notes!.trim()
                         : 'Tidak ada catatan',
-                    valueMuted: tx.notes?.isNotEmpty != true,
+                    valueMuted: tx.notes?.trim().isNotEmpty != true,
                   ),
                   const Divider(height: 1),
                   _DetailRow(
@@ -255,7 +262,7 @@ class _ReceiptSection extends StatelessWidget {
   void _showFullscreen(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => Dialog(
+      builder: (dialogCtx) => Dialog(
         backgroundColor: Colors.black,
         insetPadding: EdgeInsets.zero,
         child: Stack(
@@ -278,7 +285,7 @@ class _ReceiptSection extends StatelessWidget {
               right: 16,
               child: IconButton(
                 icon: const Icon(Icons.close_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogCtx),
               ),
             ),
           ],
