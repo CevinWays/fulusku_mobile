@@ -13,6 +13,11 @@ import '../cubit/dashboard_cubit.dart';
 import '../cubit/dashboard_state.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/quick_stats_row.dart';
+import '../widgets/stats_budget_card.dart';
+import '../widgets/stats_carousel.dart';
+import '../widgets/stats_category_card.dart';
+import '../widgets/stats_compare_card.dart';
+import '../widgets/stats_trend_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -113,6 +118,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         todayExpense: state.todayExpense,
                         monthRemaining: state.monthNet,
                         activeAccounts: state.accounts.length,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: StatsCarousel(
+                        pages: [
+                          StatsCategoryCard(spends: state.categoryBreakdown),
+                          StatsTrendCard(days: state.weekTrend),
+                          StatsCompareCard(
+                            current: state.thisMonth,
+                            previous: state.lastMonth,
+                          ),
+                          StatsBudgetCard(budgets: state.budgetProgress),
+                        ],
                       ),
                     ),
                     SliverToBoxAdapter(
