@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Fulusku is a personal finance Flutter app with OCR receipt scanning, targeting the Indonesian market. UI language and error messages are in Indonesian.
 
+`main.dart` locks orientation to portrait and initializes `intl` locale data for `id_ID` (used by `DateFormat`/`NumberFormat` formatters in `lib/core/utils/`).
+
 ## Commands
 
 This project uses FVM (Flutter Version Manager) pinned to `stable` (see `.fvmrc`). Prefix all Flutter commands with `fvm`:
@@ -19,6 +21,8 @@ fvm flutter analyze                    # lint (flutter_lints)
 fvm flutter build apk                  # Android release build
 fvm flutter build ipa                  # iOS release build
 ```
+
+No code generation (no `build_runner`, `freezed`, or `json_serializable`). Models are hand-written `Equatable` classes with manual `fromJson`/`toInsertJson`.
 
 ## Architecture
 
@@ -47,6 +51,12 @@ Backend resources:
 - Storage bucket: `receipts` — receipt images stored at `{user_id}/{uuid}.jpg`; accessed via signed URLs (1-hour expiry)
 - Edge Functions: `process-receipt` (OCR via `ScannerDatasource.processReceipt`), `generate-monthly-snapshot`
 
+`SUPABASE_URL` and `SUPABASE_ANON_KEY` have hard-coded defaults in [main.dart:15-17](lib/main.dart) — the app runs out of the box without any `--dart-define`. The anon key is intentionally committed (RLS protects data, not the key). Override only for non-default Supabase projects.
+
+### Media & scanner deps
+
+Scanner flow uses `camera`, `image_picker`, `image_cropper`, and `pdfx` (for PDF receipts). `file_picker` handles arbitrary attachments. `fl_chart` powers reports. No ML Kit on-device — OCR runs server-side via the `process-receipt` edge function.
+
 ### State management conventions
 
 - **Transactions** uses full BLoC (`TransactionBloc`) with typed events; `SearchTransactions` applies a manual 300ms debounce transformer (no rxdart)
@@ -59,6 +69,12 @@ Backend resources:
 GoRouter with auth redirect: unauthenticated users are sent to `/login`; authenticated users skip auth routes to `/home`. `_AuthRefreshNotifier` in `router.dart` drives reactive redirects from Supabase auth stream.
 
 Shell route (`MainShell`) wraps the four tab destinations: `/home`, `/reports`, `/budgets`, `/settings`. Top-level routes (`/accounts`, `/transactions`, `/scanner`, `/scanner/review`) render above the shell.
+
+Detail and review routes use `state.extra` to pass typed objects, not URL params:
+- `/transactions/:id` expects `extra: TransactionModel`; if missing it post-frame redirects to `/transactions` ([router.dart:94-108](lib/app/router.dart))
+- `/scanner/review` expects `extra: {'imagePath': String}`
+
+Deep links that arrive without `extra` will fall back; do not rely on the `:id` path segment alone to hydrate a transaction.
 
 ### Testing
 
