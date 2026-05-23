@@ -79,6 +79,15 @@ accounts!transactions_account_id_fkey ( id, user_id, name, type, initial_balance
     await _client.from(SupabaseTables.transactions).delete().eq('id', id);
   }
 
+  /// Resolves a stored receipt path to a signed URL viewable for 1 hour.
+  /// If [path] already looks like a full URL (e.g. legacy rows), returns it as-is.
+  Future<String> getReceiptSignedUrl(String path) async {
+    if (path.startsWith('http')) return path;
+    return _client.storage
+        .from(SupabaseBuckets.receipts)
+        .createSignedUrl(path, 3600);
+  }
+
   Future<List<TransactionModel>> searchTransactions(String query) async {
     final response = await _client
         .from(SupabaseTables.transactions)

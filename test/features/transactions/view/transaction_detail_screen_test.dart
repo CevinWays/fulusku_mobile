@@ -10,11 +10,14 @@ import 'package:fulusku/core/models/transaction_model.dart';
 import 'package:fulusku/features/transactions/bloc/transaction_bloc.dart';
 import 'package:fulusku/features/transactions/bloc/transaction_event.dart';
 import 'package:fulusku/features/transactions/bloc/transaction_state.dart';
+import 'package:fulusku/features/transactions/datasource/transaction_datasource.dart';
 import 'package:fulusku/features/transactions/view/transaction_detail_screen.dart';
 
 class MockTransactionBloc
     extends MockBloc<TransactionEvent, TransactionState>
     implements TransactionBloc {}
+
+class MockTransactionDatasource extends Mock implements TransactionDatasource {}
 
 TransactionModel _buildTx({
   TransType type = TransType.expense,
@@ -46,10 +49,14 @@ TransactionModel _buildTx({
 
 void main() {
   late MockTransactionBloc bloc;
+  late MockTransactionDatasource datasource;
 
   setUp(() {
     bloc = MockTransactionBloc();
+    datasource = MockTransactionDatasource();
     when(() => bloc.state).thenReturn(const TransactionInitial());
+    when(() => datasource.getReceiptSignedUrl(any()))
+        .thenAnswer((inv) async => 'https://signed.example.com/x.jpg');
   });
 
   tearDown(() => reset(bloc));
@@ -57,13 +64,14 @@ void main() {
   Widget buildSubject(TransactionModel tx) => MaterialApp(
         home: BlocProvider<TransactionBloc>.value(
           value: bloc,
-          child: TransactionDetailScreen(transaction: tx),
+          child: TransactionDetailScreen(
+            transaction: tx,
+            datasource: datasource,
+          ),
         ),
       );
 
   group('TransactionDetailScreen', () {
-    // TODO: implement TransactionDetailScreen in Task 2 to make these pass
-
     testWidgets('renders formatted amount', (tester) async {
       await tester.pumpWidget(buildSubject(_buildTx()));
       expect(find.textContaining('271.000'), findsOneWidget);
@@ -83,14 +91,17 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildSubject(_buildTx()));
       expect(find.text('Bukti Struk'), findsNothing);
+      verifyNever(() => datasource.getReceiptSignedUrl(any()));
     });
 
     testWidgets('shows receipt section when receiptImageUrl is set',
         (tester) async {
       await tester.pumpWidget(
-        buildSubject(_buildTx(receiptImageUrl: 'https://example.com/r.jpg')),
+        buildSubject(_buildTx(receiptImageUrl: 'user/uuid.jpg')),
       );
+      // Header renders immediately; image resolves via FutureBuilder.
       expect(find.text('Bukti Struk'), findsOneWidget);
+      verify(() => datasource.getReceiptSignedUrl('user/uuid.jpg')).called(1);
     });
 
     testWidgets('shows delete confirmation dialog on trash tap', (tester) async {

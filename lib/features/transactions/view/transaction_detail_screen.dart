@@ -11,13 +11,41 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
+import '../datasource/transaction_datasource.dart';
 
-class TransactionDetailScreen extends StatelessWidget {
+class TransactionDetailScreen extends StatefulWidget {
   final TransactionModel transaction;
 
-  const TransactionDetailScreen({super.key, required this.transaction});
+  /// Optional injection point for tests. Production code lets this default.
+  final TransactionDatasource? datasource;
 
-  static Color _amountColor(TransType type) {
+  const TransactionDetailScreen({
+    super.key,
+    required this.transaction,
+    this.datasource,
+  });
+
+  @override
+  State<TransactionDetailScreen> createState() =>
+      _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  Future<String>? _receiptUrlFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final path = widget.transaction.receiptImageUrl;
+    if (path != null && path.isNotEmpty) {
+      // Construct datasource lazily so tests without Supabase init still work
+      // when receiptImageUrl is null.
+      final ds = widget.datasource ?? TransactionDatasource();
+      _receiptUrlFuture = ds.getReceiptSignedUrl(path);
+    }
+  }
+
+  Color _amountColor(TransType type) {
     switch (type) {
       case TransType.income:
         return AppColors.income;
@@ -28,7 +56,7 @@ class TransactionDetailScreen extends StatelessWidget {
     }
   }
 
-  static String _amountPrefix(TransType type) {
+  String _amountPrefix(TransType type) {
     switch (type) {
       case TransType.income:
         return '+';
@@ -67,13 +95,15 @@ class TransactionDetailScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       Navigator.pop(context); // optimistic: kembali ke list
-      context.read<TransactionBloc>().add(DeleteTransaction(transaction.id));
+      context
+          .read<TransactionBloc>()
+          .add(DeleteTransaction(widget.transaction.id));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tx = transaction;
+    final tx = widget.transaction;
     final cat = tx.category;
     final color = AppColors.fromHex(cat?.color);
     final amountColor = _amountColor(tx.type);
@@ -204,9 +234,9 @@ class TransactionDetailScreen extends StatelessWidget {
             ),
 
             // Receipt
-            if (tx.receiptImageUrl != null) ...[
+            if (_receiptUrlFuture != null) ...[
               const Divider(height: 1),
-              _ReceiptSection(imageUrl: tx.receiptImageUrl!),
+              _ReceiptSection(resolveUrl: _receiptUrlFuture!),
             ],
 
             const SizedBox(height: 40),
@@ -255,11 +285,11 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _ReceiptSection extends StatelessWidget {
-  final String imageUrl;
+  final Future<String> resolveUrl;
 
-  const _ReceiptSection({required this.imageUrl});
+  const _ReceiptSection({required this.resolveUrl});
 
-  void _showFullscreen(BuildContext context) {
+  void _showFullscreen(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -271,7 +301,7 @@ class _ReceiptSection extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
                 fit: BoxFit.contain,
-                errorWidget: (_, __, ___) => const Center(
+                errorWidget: (_, _, _) => const Center(
                   child: Icon(
                     Icons.broken_image_outlined,
                     color: Colors.white54,
@@ -303,27 +333,65 @@ class _ReceiptSection extends StatelessWidget {
         children: [
           Text('Bukti Struk', style: AppTypography.caption),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _showFullscreen(context),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                height: 80,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(
-                  height: 80,
-                  color: AppColors.surface,
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.broken_image_outlined,
-                      color: AppColors.textMuted),
+          FutureBuilder<String>(
+            future: resolveUrl,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _ReceiptPlaceholder.loading();
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return _ReceiptPlaceholder.error();
+              }
+              final url = snapshot.data!;
+              return GestureDetector(
+                onTap: () => _showFullscreen(context, url),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    height: 80,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (_, _) => _ReceiptPlaceholder.loading(),
+                    errorWidget: (_, _, _) => _ReceiptPlaceholder.error(),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ReceiptPlaceholder extends StatelessWidget {
+  final Widget child;
+  const _ReceiptPlaceholder._({required this.child});
+
+  factory _ReceiptPlaceholder.loading() => const _ReceiptPlaceholder._(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+
+  factory _ReceiptPlaceholder.error() => const _ReceiptPlaceholder._(
+        child: Icon(Icons.broken_image_outlined, color: AppColors.textMuted),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 80,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: child,
     );
   }
 }
