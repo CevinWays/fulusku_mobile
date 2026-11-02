@@ -35,6 +35,8 @@ class _SetBudgetSheetState extends State<SetBudgetSheet> {
   CategoryModel? _selected;
   List<CategoryModel> _availableCats = [];
   bool _loadingCats = false;
+  // Pesan error inline: snackbar root tertutup sheet modal.
+  String? _error;
 
   bool get _isEdit => widget.existing != null;
 
@@ -74,9 +76,11 @@ class _SetBudgetSheetState extends State<SetBudgetSheet> {
       return;
     }
     if (_selected == null) {
-      showErrorSnackbar(context, 'Pilih kategori terlebih dahulu.');
+      HapticFeedback.lightImpact();
+      setState(() => _error = 'Pilih kategori terlebih dahulu.');
       return;
     }
+    setState(() => _error = null);
     HapticFeedback.selectionClick();
     final amount = parseCurrency(_amountController.text) ?? 0;
     context.read<BudgetCubit>().setBudget(
@@ -95,7 +99,7 @@ class _SetBudgetSheetState extends State<SetBudgetSheet> {
           Navigator.pop(context);
           showSuccessSnackbar(context, _isEdit ? 'Budget diperbarui' : 'Budget ditambahkan');
         }
-        if (state is BudgetError) showErrorSnackbar(context, state.message);
+        if (state is BudgetError) setState(() => _error = state.message);
       },
       child: Padding(
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -204,6 +208,13 @@ class _SetBudgetSheetState extends State<SetBudgetSheet> {
                   validator: validateAmount,
                   textInputAction: TextInputAction.done,
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.danger),
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 BlocBuilder<BudgetCubit, BudgetState>(

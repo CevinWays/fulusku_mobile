@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,8 +16,7 @@ import '../../../shared/widgets/error_snackbar.dart';
 import '../cubit/scanner_cubit.dart';
 import '../cubit/scanner_state.dart';
 
-/// Camera screen — pakai ImagePicker (system camera) untuk simplicity MVP.
-/// Camera in-app dengan overlay panduan bisa di-upgrade post-MVP.
+/// Camera screen — document scanner untuk kamera, ImagePicker untuk galeri.
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key, this.imagePicker});
   final ImagePicker? imagePicker;
@@ -28,14 +28,19 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late final _picker = widget.imagePicker ?? ImagePicker();
 
+  /// Document scanner: ML Kit (Android) / VisionKit (iOS) — deteksi tepi &
+  /// crop otomatis supaya OCR hanya membaca struk.
   Future<void> _capture() async {
     try {
-      final picked = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85,
-        maxWidth: 1600,
+      // shortcut: tanpa resize (dulu maxWidth 1600), tambah kompresi bila upload lambat.
+      final pages = await CunningDocumentScanner.getPictures(
+        noOfPages: 1,
+        iosScannerOptions: IosScannerOptions(
+          imageFormat: IosImageFormat.jpg, // upload di-set image/jpeg
+          jpgCompressionQuality: 0.85,
+        ),
       );
-      if (picked == null) {
+      if (pages == null) {
         // User cancel → kembali ke screen sebelumnya.
         if (mounted) Navigator.pop(context);
         return;
@@ -43,7 +48,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
       HapticFeedback.mediumImpact();
       if (!mounted) return;
-      await context.read<ScannerCubit>().uploadAndProcess(File(picked.path));
+      await context.read<ScannerCubit>().uploadAndProcess(File(pages.first));
     } catch (e) {
       if (mounted) {
         showErrorSnackbar(context, 'Gagal akses kamera: $e');
@@ -177,8 +182,8 @@ class _CameraScreenState extends State<CameraScreen> {
                           const SizedBox(height: 32),
                           ElevatedButton.icon(
                             onPressed: _capture,
-                            icon: const Icon(Icons.camera_alt_rounded),
-                            label: const Text('Buka Kamera'),
+                            icon: const Icon(Icons.document_scanner_rounded),
+                            label: const Text('Mulai Pindai'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,

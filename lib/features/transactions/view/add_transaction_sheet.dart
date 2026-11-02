@@ -48,15 +48,22 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   AccountModel? _destinationAccount;
   CategoryModel? _category;
   late DateTime _date;
+  bool _receiptDateInvalid = false;
   bool _showDetails = false;
   final _payeeController = TextEditingController();
   final _notesController = TextEditingController();
+  // Scaffold lokal: snackbar root tertutup sheet modal, jadi toast validasi tampil di sini.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _amount = widget.initialAmount ?? 0;
-    _date = widget.initialDate ?? DateTime.now();
+    final initial = widget.initialDate ?? DateTime.now();
+    // Tanggal struk di masa depan = salah baca OCR → pakai hari ini & minta user cek.
+    _receiptDateInvalid = _isFuture(initial);
+    _date = _receiptDateInvalid ? DateTime.now() : initial;
+    _showDetails = _receiptDateInvalid;
     if (widget.initialPayee != null) _payeeController.text = widget.initialPayee!;
 
     // Load accounts & categories saat sheet dibuka.
@@ -96,8 +103,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
+  static bool _isFuture(DateTime d) =>
+      DateUtils.dateOnly(d).isAfter(DateUtils.dateOnly(DateTime.now()));
+
+  void _showError(String message) =>
+      showErrorSnackbar(_scaffoldKey.currentContext ?? context, message);
+
   bool get _isValid {
     if (_amount <= 0) return false;
+    if (_isFuture(_date)) return false;
     if (_account == null) return false;
     if (_category == null) return false;
     if (_type == TransType.transfer) {
@@ -110,7 +124,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   void _submit() {
     if (!_isValid) {
       HapticFeedback.lightImpact();
-      showErrorSnackbar(context, _validationMessage());
+      _showError(_validationMessage());
       return;
     }
     HapticFeedback.mediumImpact();
@@ -135,6 +149,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   String _validationMessage() {
     if (_amount <= 0) return 'Masukkan nominal terlebih dahulu.';
+    if (_isFuture(_date)) return 'Tanggal tidak boleh melebihi hari ini.';
     if (_account == null) return 'Pilih akun sumber.';
     if (_category == null) return 'Pilih kategori.';
     if (_type == TransType.transfer && _destinationAccount == null) {
@@ -152,9 +167,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       context: context,
       initialDate: _date,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now(),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked != null) {
+      setState(() {
+        _date = picked;
+        _receiptDateInvalid = false;
+      });
+    }
   }
 
   void _switchType(TransType t) {
@@ -178,7 +198,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           showSuccessSnackbar(context, 'Transaksi disimpan');
         }
         if (state is TransactionError) {
-          showErrorSnackbar(context, state.message);
+          _showError(state.message);
         }
       },
       child: Container(
@@ -188,7 +208,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
+        child: ScaffoldMessenger(
+          child: Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: Colors.transparent,
+            // Container sudah padding viewInsets; jangan dobel.
+            resizeToAvoidBottomInset: false,
+            body: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Drag handle
@@ -328,6 +354,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                               ),
                             ),
                           ),
+                          if (_receiptDateInvalid)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Tanggal di struk tidak valid, cek lagi.',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 12),
 
                           AuthFormField(
@@ -391,6 +430,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );

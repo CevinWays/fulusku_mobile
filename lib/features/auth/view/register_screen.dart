@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/error_snackbar.dart';
+import '../../settings/view/legal_screen.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/auth_form_field.dart';
@@ -29,6 +31,10 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
   final _confirmFocus = FocusNode();
+  late final _termsTap = TapGestureRecognizer()
+    ..onTap = () => LegalScreen.open(context, 'Ketentuan Layanan', termsOfService);
+  late final _privacyTap = TapGestureRecognizer()
+    ..onTap = () => LegalScreen.open(context, 'Kebijakan Privasi', privacyPolicy);
 
   late final AnimationController _animController;
   late final Animation<double> _fadeAnimation;
@@ -66,6 +72,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     _passwordFocus.dispose();
     _confirmFocus.dispose();
     _animController.dispose();
+    _termsTap.dispose();
+    _privacyTap.dispose();
     super.dispose();
   }
 
@@ -319,6 +327,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         children: [
                           TextSpan(
                             text: 'Ketentuan Layanan',
+                            recognizer: _termsTap,
                             style: AppTypography.caption.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,
@@ -327,6 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           const TextSpan(text: ' dan '),
                           TextSpan(
                             text: 'Kebijakan Privasi',
+                            recognizer: _privacyTap,
                             style: AppTypography.caption.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,

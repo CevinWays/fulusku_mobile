@@ -53,9 +53,9 @@ void main() {
       expect(find.text('Upload PDF'), findsOneWidget);
     });
 
-    testWidgets('shows Buka Kamera button in idle state', (tester) async {
+    testWidgets('shows Mulai Pindai button in idle state', (tester) async {
       await tester.pumpWidget(_buildSubject(cubit));
-      expect(find.text('Buka Kamera'), findsOneWidget);
+      expect(find.text('Mulai Pindai'), findsOneWidget);
     });
 
     testWidgets('shows Pilih dari Galeri button in idle state', (tester) async {
@@ -71,7 +71,7 @@ void main() {
       );
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
-      expect(find.text('Buka Kamera'), findsNothing);
+      expect(find.text('Mulai Pindai'), findsNothing);
       expect(find.text('Pilih dari Galeri'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
@@ -84,7 +84,7 @@ void main() {
       );
       await tester.pumpWidget(_buildSubject(cubit));
       expect(find.text('Upload PDF'), findsNothing);
-      expect(find.text('Buka Kamera'), findsNothing);
+      expect(find.text('Mulai Pindai'), findsNothing);
       expect(find.text('Pilih dari Galeri'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });

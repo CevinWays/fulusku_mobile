@@ -49,13 +49,15 @@ Backend resources:
 - Tables: `transactions`, `accounts`, `categories`, `budgets`, `receipt_line_items`, `monthly_snapshots`
 - Views: `account_balances`, `monthly_category_summary`
 - Storage bucket: `receipts` — receipt images stored at `{user_id}/{uuid}.jpg`; accessed via signed URLs (1-hour expiry)
-- Edge Functions: `process-receipt` (OCR via `ScannerDatasource.processReceipt`), `generate-monthly-snapshot`
+- Edge Functions: `process-receipt` (OCR via `ScannerDatasource.processReceipt`; calls the third-party **Tabscanner** receipt OCR API), `generate-monthly-snapshot`. Edge function source is **not in this repo** — it lives only in the Supabase project (Dashboard → Edge Functions)
 
 `SUPABASE_URL` and `SUPABASE_ANON_KEY` have hard-coded defaults in [main.dart:15-17](lib/main.dart) — the app runs out of the box without any `--dart-define`. The anon key is intentionally committed (RLS protects data, not the key). Override only for non-default Supabase projects.
 
 ### Media & scanner deps
 
-Scanner flow uses `camera`, `image_picker`, `image_cropper`, and `pdfx` (for PDF receipts). `file_picker` handles arbitrary attachments. `fl_chart` powers reports. No ML Kit on-device — OCR runs server-side via the `process-receipt` edge function.
+Scanner flow captures with `cunning_document_scanner` (ML Kit document scanner on Android, VisionKit on iOS — edge detection + auto-crop), picks from gallery with `image_picker`, and renders PDF receipts with `pdfx`. `file_picker` handles arbitrary attachments. `fl_chart` powers reports. OCR itself runs server-side: `process-receipt` sends the uploaded image to the Tabscanner API; there is no on-device text recognition.
+
+The document scanner requires Android minSdk 24 (Flutter's default) and iOS 13 (`platform :ios, '13.0'` in `ios/Podfile`). On Android, ML Kit needs Google Play Services; without it the plugin falls back to a manual-crop scanner. On iOS the output is forced to JPEG because `ScannerDatasource.uploadImage` uploads as `image/jpeg`.
 
 ### State management conventions
 
@@ -75,6 +77,12 @@ Detail and review routes use `state.extra` to pass typed objects, not URL params
 - `/scanner/review` expects `extra: {'imagePath': String}`
 
 Deep links that arrive without `extra` will fall back; do not rely on the `:id` path segment alone to hydrate a transaction.
+
+Pages that must be reachable while logged out, such as `LegalScreen` (privacy policy and terms), are pushed with `Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(...))` rather than registered as GoRouter routes, because the auth redirect would send them to `/login`.
+
+### Bottom sheets & snackbars
+
+`showErrorSnackbar` uses the root `ScaffoldMessenger`, which renders *behind* a modal bottom sheet. Inside a sheet, either wrap its content in a local `ScaffoldMessenger` + `Scaffold` (as `AddTransactionSheet` does via `_scaffoldKey`) or show the error inline (as `SetBudgetSheet` does). Success toasts shown after `Navigator.pop` should still use the caller's (root) context.
 
 ### Testing
 

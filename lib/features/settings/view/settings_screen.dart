@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../auth/cubit/auth_cubit.dart';
+import 'legal_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -110,13 +111,15 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.policy_outlined,
             iconColor: AppColors.textMuted,
             title: 'Kebijakan Privasi',
-            onTap: () {},
+            onTap: () =>
+                LegalScreen.open(context, 'Kebijakan Privasi', privacyPolicy),
           ),
           _SettingsTile(
             icon: Icons.description_outlined,
             iconColor: AppColors.textMuted,
             title: 'Ketentuan Layanan',
-            onTap: () {},
+            onTap: () =>
+                LegalScreen.open(context, 'Ketentuan Layanan', termsOfService),
           ),
 
           const SizedBox(height: 24),
